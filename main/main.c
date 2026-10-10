@@ -74,7 +74,8 @@ static uint32_t encode_control(bool paused, uint32_t speed_index)
 static void notify_control(TaskHandle_t task, uint32_t state)
 {
     configASSERT(task != NULL);
-    configASSERT(xTaskNotify(task, state, eSetValueWithOverwrite) == pdPASS);
+    const BaseType_t result = xTaskNotify(task, state, eSetValueWithOverwrite);
+    configASSERT(result == pdPASS);
 }
 
 static void button_task(void *arg)
