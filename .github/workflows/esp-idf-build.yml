@@ -1,0 +1,20 @@
+name: ESP-IDF 5.5 - Module 6.1
+on:
+  push:
+    branches:
+      - hw/6.1-rtos-esp-idf
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    container:
+      image: espressif/idf:release-v5.5
+    steps:
+      - uses: actions/checkout@v4
+      - name: Show ESP-IDF version
+        run: idf.py --version
+      - name: Configure ESP32-S3
+        run: idf.py set-target esp32s3
+      - name: Build firmware
+        run: idf.py build
