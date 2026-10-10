@@ -10,11 +10,14 @@ jobs:
     runs-on: ubuntu-latest
     container:
       image: espressif/idf:release-v5.5
+    defaults:
+      run:
+        shell: bash
     steps:
       - uses: actions/checkout@v4
-      - name: Show ESP-IDF version
-        run: idf.py --version
-      - name: Configure ESP32-S3
-        run: idf.py set-target esp32s3
-      - name: Build firmware
-        run: idf.py build
+      - name: Configure and build ESP32-S3 firmware
+        run: |
+          source /opt/esp/idf/export.sh
+          idf.py --version
+          idf.py set-target esp32s3
+          idf.py build
