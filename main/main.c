@@ -30,6 +30,8 @@ static const uint32_t LED2_SPEEDS_MS[] = {1000U, 500U, 200U};
 
 typedef struct {
     gpio_num_t pin;
+    bool idle_level;
+    bool last_level;
     bool last_raw;
     bool stable;
     TickType_t last_transition;
@@ -51,7 +53,13 @@ static TaskHandle_t button_handle;
 
 static bool button_pressed_edge(button_t *button, TickType_t now)
 {
-    const bool raw = gpio_get_level(button->pin) == 1;
+    const bool level = gpio_get_level(button->pin) != 0;
+    if (level != button->last_level) {
+        button->last_level = level;
+        ESP_LOGI(TAG, "GPIO%d level changed: %u", (int)button->pin, level ? 1U : 0U);
+    }
+    // Detect either active-low or active-high button modules from their idle level.
+    const bool raw = level != button->idle_level;
 
     if (raw != button->last_raw) {
         button->last_raw = raw;
@@ -83,6 +91,13 @@ static void button_task(void *arg)
     (void)arg;
     button_t speed_button = {.pin = BUTTON1_GPIO};
     button_t pause_button = {.pin = BUTTON2_GPIO};
+    speed_button.idle_level = gpio_get_level(speed_button.pin) != 0;
+    speed_button.last_level = speed_button.idle_level;
+    pause_button.idle_level = gpio_get_level(pause_button.pin) != 0;
+    pause_button.last_level = pause_button.idle_level;
+    ESP_LOGI(TAG, "Button baseline: GPIO%d=%u GPIO%d=%u; press/release levels are logged",
+             (int)speed_button.pin, speed_button.idle_level ? 1U : 0U,
+             (int)pause_button.pin, pause_button.idle_level ? 1U : 0U);
     uint32_t speed_index = 0U;
     bool paused = false;
     TickType_t last_wake = xTaskGetTickCount();
@@ -189,8 +204,8 @@ void app_main(void)
     const gpio_config_t inputs = {
         .pin_bit_mask = (1ULL << BUTTON1_GPIO) | (1ULL << BUTTON2_GPIO),
         .mode = GPIO_MODE_INPUT,
-        .pull_up_en = GPIO_PULLUP_DISABLE,
-        .pull_down_en = GPIO_PULLDOWN_ENABLE,
+        .pull_up_en = GPIO_PULLUP_ENABLE,
+        .pull_down_en = GPIO_PULLDOWN_DISABLE,
         .intr_type = GPIO_INTR_DISABLE,
     };
     ESP_ERROR_CHECK(gpio_config(&outputs));
